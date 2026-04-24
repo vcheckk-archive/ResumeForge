@@ -21,8 +21,8 @@ A centralized **Model Context Protocol (MCP)** server that ingests career data f
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/profile_builder.git
-cd profile_builder
+git clone https://github.com/vijayakanth06/ResumeForge.git
+cd ResumeForge
 pip install -r requirements.txt
 ```
 
