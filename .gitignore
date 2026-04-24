@@ -1,0 +1,33 @@
+# ── Python ────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ── Environment & Secrets ─────────────────────────────────────────────
+.env
+*.env.local
+
+# ── Generated Output (re-generated on each run) ──────────────────────
+md/
+
+# ── User Data (personal archives — never commit) ─────────────────────
+*.zip
+*LinkedInDataExport*/
+*linkedin*export*/
+
+# ── IDE / Editor ──────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── OS ────────────────────────────────────────────────────────────────
+desktop.ini
+*.lnk
