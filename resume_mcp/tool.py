@@ -54,10 +54,10 @@ logger = logging.getLogger(__name__)
 def resume_history_analyze(
     folder_path: str | None = None,
     output_dir: str | None = None,
-) -> dict:
+) -> str:
     """
-    Analyze a folder of resume files and produce a deduplicated,
-    chronological Markdown career profile.
+    Analyze a folder of resume files, extract the raw data, and prompt
+    the calling LLM to deduplicate and structure it into a Markdown file.
 
     Args:
         folder_path: Path to folder containing PDF/DOCX resumes.
@@ -66,20 +66,9 @@ def resume_history_analyze(
                      in the project root.
 
     Returns:
-        {
-            "success": bool,
-            "files_processed": [...],
-            "files_failed": [...],
-            "output_path": "md/resume/resume_history.md",
-            "dedup_report": {
-                "projects_merged": [...],
-                "jobs_merged": [...],
-                "skills_deduplicated": N,
-                ...
-            },
-            "extraction_warnings": [...],
-            "errors": [...]
-        }
+        A string containing the raw unstructured text from all resumes,
+        prefaced with a strict instruction to the client LLM to format
+        and save the data as a perfectly structured Markdown file.
     """
     result = AnalysisResult()
 
@@ -139,65 +128,56 @@ def resume_history_analyze(
         # ── Step 6: Timeline ──────────────────────────────────────────
         history = build_timeline(resumes, history)
 
-        # ── Step 7: Write Markdown ────────────────────────────────────
+        # ── Step 7: Hand off to the client LLM ────────────────────────────
+        # Instead of writing chaotic heuristic markdown, we ask the calling LLM
+        # to format it beautifully.
         out_path = (
             Path(output_dir)
             if output_dir
             else Path(__file__).resolve().parent.parent / DEFAULT_OUTPUT_DIR
         )
-        output_file = write_resume_history(history, out_path)
-        result.output_path = output_file
+        
+        # Prepare the raw text for the LLM
+        raw_payload = []
+        raw_payload.append(f"Identity: {history.identity}")
+        for exp in history.experiences:
+            raw_payload.append(f"Experience Entry: {exp.get('raw', exp)}")
+        for proj in history.projects:
+            raw_payload.append(f"Project Entry: {proj.get('raw', proj)}")
+        raw_payload.append(f"Skills: {history.skills}")
+        for edu in history.education:
+            raw_payload.append(f"Education Entry: {edu.get('raw', edu)}")
+        raw_payload.append(f"Certs: {history.certifications}")
+        for sec in history.raw_sections_unclassified:
+            raw_payload.append(f"Unclassified Section [{sec.heading}]: {sec.content}")
+            
+        full_raw_text = "\n\n".join(raw_payload)
 
-        # ── Populate result ───────────────────────────────────────────
-        dr = history.dedup_report
-        result.dedup_report = {
-            "projects_merged": dr.projects_merged,
-            "jobs_merged": dr.jobs_merged,
-            "skills_deduplicated": dr.skills_deduplicated,
-            "certs_deduplicated": dr.certs_deduplicated,
-            "education_deduplicated": dr.education_deduplicated,
-            "total_input_items": dr.total_input_items,
-            "total_output_items": dr.total_output_items,
-        }
-        result.extraction_warnings = history.extraction_warnings
+        prompt = f"""
+I have successfully extracted the raw, unstructured data from {len(result.files_processed)} resume files.
+Because PDF extraction is messy, the raw text below is chaotic. 
 
-        logger.info(
-            "Done — output: %s | processed: %d | failed: %d | warnings: %d",
-            output_file,
-            len(result.files_processed),
-            len(result.files_failed),
-            len(result.extraction_warnings),
-        )
+**YOUR TASK AS THE AI:**
+1. Read the raw data below.
+2. Deduplicate roles, projects, and skills.
+3. Chronologically order the experiences and projects.
+4. Format everything into a PERFECT, professional Markdown resume.
+5. You MUST save the final Markdown to the following file path using your file-writing capabilities:
+   {out_path / "resume_history.md"}
+6. If you cannot write to files natively, output the Markdown here in our chat.
+
+RAW DATA:
+================
+{full_raw_text}
+"""
+        return prompt
 
     except (FolderNotFoundError, NoResumesFoundError) as e:
-        result.success = False
-        result.errors.append(str(e))
-        logger.error("Input error: %s", e)
-
-    except MarkdownWriteError as e:
-        result.success = False
-        result.errors.append(str(e))
-        logger.error("Write error: %s", e)
-
+        return f"Input error: {e}"
     except ResumeMCPError as e:
-        result.success = False
-        result.errors.append(str(e))
-        logger.error("Pipeline error: %s", e)
-
+        return f"Pipeline error: {e}"
     except Exception as e:
-        result.success = False
-        result.errors.append(f"Unexpected error: {e}")
-        logger.exception("Unexpected error in resume_history_analyze")
-
-    return {
-        "success": result.success,
-        "files_processed": result.files_processed,
-        "files_failed": result.files_failed,
-        "output_path": result.output_path,
-        "dedup_report": result.dedup_report,
-        "extraction_warnings": result.extraction_warnings,
-        "errors": result.errors,
-    }
+        return f"Unexpected error in resume_history_analyze: {e}"
 
 
 # ──────────────────────────────────────────────────────────────────────

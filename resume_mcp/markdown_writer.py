@@ -1,7 +1,8 @@
 """
 Resume History MCP — Markdown Writer
 ======================================
-Writes the final resume_history.md to disk.
+Writes the final resume_history.md to disk using heuristic templates.
+(The calling LLM can later be instructed to overwrite this with a perfectly formatted version.)
 """
 
 from __future__ import annotations
@@ -19,16 +20,6 @@ logger = logging.getLogger(__name__)
 def write_resume_history(history: ResumeHistory, out_dir: Path) -> str:
     """
     Render ResumeHistory to Markdown and write to disk.
-
-    Args:
-        history:  Fully aggregated + deduplicated ResumeHistory.
-        out_dir:  Output directory Path.
-
-    Returns:
-        Absolute path to the written file.
-
-    Raises:
-        MarkdownWriteError: if the file cannot be written.
     """
     try:
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -48,3 +39,4 @@ def write_resume_history(history: ResumeHistory, out_dir: Path) -> str:
         raise MarkdownWriteError(
             "Unexpected error during Markdown generation", details=str(e)
         ) from e
+
