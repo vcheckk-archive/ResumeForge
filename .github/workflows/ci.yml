@@ -57,7 +57,13 @@ jobs:
           python -c "
           from resume_mcp.tool import resume_history_analyze
           r = resume_history_analyze(folder_path='/nonexistent/path')
-          assert 'ERROR' in r or 'error' in r.lower(), 'Should fail gracefully'
+
+          assert isinstance(r, dict), f'Expected dict, got {type(r)}'
+          assert r.get('success') is False, f'Should fail gracefully, got: {r}'
+
+          errors = ' '.join(r.get('errors', []))
+          assert 'error' in errors.lower(), f'Expected error message, got: {r.get('errors')}'
+
           print('Resume graceful failure: OK')
           "
 
