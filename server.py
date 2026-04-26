@@ -24,6 +24,7 @@ from mcp.server.fastmcp import FastMCP
 from linkedin_mcp.tool import linkedin_ingest_archive
 from github_mcp.tool import github_build_profile
 from coding_mcp.tool import coding_extract_profiles
+from resume_mcp.tool import resume_history_analyze
 
 # ── Logging ───────────────────────────────────────────────────────────
 
@@ -43,6 +44,7 @@ mcp = FastMCP("ProfileBuilderServer")
 mcp.tool()(linkedin_ingest_archive)
 mcp.tool()(github_build_profile)
 mcp.tool()(coding_extract_profiles)
+mcp.tool()(resume_history_analyze)
 
 # ── Entry Point ───────────────────────────────────────────────────────
 
