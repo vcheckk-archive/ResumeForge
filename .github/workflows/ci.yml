@@ -62,7 +62,7 @@ jobs:
           assert r.get('success') is False, f'Should fail gracefully, got: {r}'
 
           errors = ' '.join(r.get('errors', []))
-          assert 'error' in errors.lower(), f'Expected error message, got: {r.get('errors')}'
+          assert 'error' in errors.lower(), f'Expected error message, got: {r.get(\"errors\")}'
 
           print('Resume graceful failure: OK')
           "
