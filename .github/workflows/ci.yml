@@ -36,29 +36,38 @@ jobs:
           python -c "from github_mcp.tool import github_build_profile; print('github_mcp OK')"
           python -c "from coding_mcp.tool import coding_extract_profiles; print('coding_mcp OK')"
           python -c "from resume_mcp.tool import resume_history_analyze; print('resume_mcp OK')"
+          python -c "from tailor_mcp.tool import tailor_resume_for_job; print('tailor_mcp OK')"
           python -c "from env_loader import load_env; print('env_loader OK')"
 
-      - name: Verify all 4 tools register on server
+      - name: Verify all 5 tools register on server
         run: |
           python -c "
           from env_loader import load_env
           load_env()
           from server import mcp
           tools = list(mcp._tool_manager._tools.keys())
-          expected = {'linkedin_ingest_archive','github_build_profile','coding_extract_profiles','resume_history_analyze'}
+          expected = {'linkedin_ingest_archive','github_build_profile','coding_extract_profiles','resume_history_analyze','tailor_resume_for_job'}
           missing = expected - set(tools)
           assert not missing, f'Missing tools: {missing}'
           print(f'All {len(tools)} tools registered: {tools}')
           "
 
-      - name: Test graceful failure (missing folder)
+      - name: Test resume_mcp graceful failure
         run: |
           python -c "
           from resume_mcp.tool import resume_history_analyze
           r = resume_history_analyze(folder_path='/nonexistent/path')
-          assert not r['success'], 'Should fail gracefully'
-          assert r['errors'], 'Should have error message'
-          print('Graceful failure: OK')
+          assert 'ERROR' in r or 'error' in r.lower(), 'Should fail gracefully'
+          print('Resume graceful failure: OK')
+          "
+
+      - name: Test tailor_mcp graceful failure (no JD)
+        run: |
+          python -c "
+          from tailor_mcp.tool import tailor_resume_for_job
+          r = tailor_resume_for_job()
+          assert 'ERROR' in r, 'Should fail gracefully when no JD provided'
+          print('Tailor graceful failure: OK')
           "
 
       - name: Test coding tool input parser

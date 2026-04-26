@@ -16,6 +16,23 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.2.0] — 2025-04-26
+
+### Added
+- **`tailor_mcp`** — ATS Resume Tailor Tool
+  - Aggregates all `md/` data (LinkedIn, GitHub, Coding, Resume)
+  - Accepts Job Description via text, file (TXT/PDF/DOCX), or folder
+  - Returns structured prompt to the host LLM for ATS-optimized resume generation
+  - Host LLM generates `md/tailored/<Company>_<Role>.md`
+  - Zero external API keys required — uses the calling LLM natively
+- `JD_INPUT_PATH` config key in `.env`
+- `resume_mcp` now returns raw data to the host LLM for formatting (no more heuristic chaos)
+
+### Changed
+- Server name updated from `ProfileBuilderServer` to `ResumeForgeServer`
+
+---
+
 ## [1.1.0] — 2025-04-26
 
 ### Added

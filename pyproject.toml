@@ -1,7 +1,7 @@
 [project]
 name = "resumeforge"
-version = "1.1.0"
-description = "A modular MCP server that converts LinkedIn, GitHub, coding profiles, and resume files into structured Markdown — ready for AI-powered resume generation."
+version = "1.2.0"
+description = "A modular MCP server that converts LinkedIn, GitHub, coding profiles, and resume files into structured Markdown — and tailors them to any job description for maximum ATS score."
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [{ name = "ResumeForge Contributors" }]

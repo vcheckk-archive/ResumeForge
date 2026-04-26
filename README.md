@@ -2,7 +2,7 @@
 
 # ⚡ ResumeForge
 
-### A modular MCP server that turns your career data into structured Markdown — ready for AI-powered resume generation.
+### A modular MCP server that turns your career data into structured Markdown — and tailors it to any job description for maximum ATS score.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/vijayakanth06/ResumeForge/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/vijayakanth06/ResumeForge/actions)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square)](https://python.org)
@@ -18,14 +18,15 @@
 
 ## What Is ResumeForge?
 
-ResumeForge is a **plug-and-play MCP (Model Context Protocol) server** with four specialized tools, each targeting a different layer of your professional identity:
+ResumeForge is a **plug-and-play MCP (Model Context Protocol) server** with five specialized tools. Four tools extract your career data from different sources into Markdown. The fifth tool combines all that data and tailors it to any job description for maximum ATS compatibility.
 
-| Source | Tool | What It Produces |
-|---|---|---|
-| 🔗 **LinkedIn** | `linkedin_ingest_archive` | 7 Markdown files: identity, summary, experience, education, skills, certifications, projects |
-| 🐙 **GitHub** | `github_build_profile` | Per-repo Markdown + portfolio summary from public & private repos |
-| 💻 **Coding Platforms** | `coding_extract_profiles` | Stats from LeetCode & Codeforces — rating, problems, contests |
-| 📄 **Resume Files** | `resume_history_analyze` | Deduplicated career timeline from multiple PDF/DOCX resumes |
+| # | Source | Tool | What It Produces |
+|---|---|---|---|
+| 1 | 🔗 **LinkedIn** | `linkedin_ingest_archive` | 7 Markdown files: identity, summary, experience, education, skills, certifications, projects |
+| 2 | 🐙 **GitHub** | `github_build_profile` | Per-repo Markdown + portfolio summary from public & private repos |
+| 3 | 💻 **Coding Platforms** | `coding_extract_profiles` | Stats from LeetCode & Codeforces — rating, problems, contests |
+| 4 | 📄 **Resume Files** | `resume_history_analyze` | Career timeline from multiple PDF/DOCX resumes |
+| 5 | 🎯 **ATS Tailor** | `tailor_resume_for_job` | ATS-optimized resume tailored to a specific job description |
 
 **One `.env` file configures everything. One `server.py` runs everything.**
 
@@ -38,13 +39,20 @@ Connect ResumeForge to Claude Desktop, Cursor, or any MCP-compatible client and 
 ```
 Your Data Sources              ResumeForge MCP Tools           Output
 ─────────────────              ─────────────────────           ──────
+
+PHASE 1: Extract career data into md/
+
 LinkedIn Export       ──────►  linkedin_ingest_archive   ──►  md/linkedin/*.md
 GitHub Profile        ──────►  github_build_profile      ──►  md/github/**/*.md
 LeetCode / Codeforces ──────►  coding_extract_profiles   ──►  md/coding/*.md
 Resume Folder (PDF)   ──────►  resume_history_analyze    ──►  md/resume/*.md
+
+PHASE 2: Tailor for a specific job
+
+md/ + Job Description ──────►  tailor_resume_for_job     ──►  md/tailored/<Company>_<Role>.md
                                         │
                                ─────────┼──────────────────────────────────
-                               Structured Markdown ready for any LLM/AI agent
+                               ATS-optimized resume ready for any AI resume builder
 ```
 
 ---
@@ -80,6 +88,9 @@ CODING_PROFILES=https://leetcode.com/u/your-user, https://codeforces.com/profile
 
 # 4. Resume folder — folder containing your PDF/DOCX resume files
 RESUME_HISTORY_PATH=/path/to/your/resumes
+
+# 5. (Optional) Default JD file or folder for the tailor tool
+JD_INPUT_PATH=/path/to/job_descriptions/role.txt
 ```
 
 > **Note:** All fields are optional. Each tool only uses its own config key.
@@ -170,7 +181,7 @@ coding_extract_profiles("leetcode: user, codeforces: user")
 
 ### `resume_history_analyze`
 
-Ingests a folder of past resume versions (PDF + DOCX), deduplicates across versions, reconstructs a career timeline using file dates, and produces one clean Markdown profile.
+Ingests a folder of past resume versions (PDF + DOCX), extracts all data, and returns it to the host LLM for perfect structuring. The host LLM deduplicates and formats the career timeline.
 
 ```python
 # Zero-config — reads RESUME_HISTORY_PATH from .env
@@ -187,9 +198,70 @@ resume_history_analyze(folder_path="/path/to/resumes")
 4. **Classification** — detects generic vs company-targeted resumes
 5. **Aggregation** — oldest-to-newest merge, latest resume wins conflicts
 6. **Deduplication** — fuzzy match (rapidfuzz) for projects/jobs, exact for skills/certs
-7. **Timeline** — per-event chronological career progression
+7. **LLM Handoff** — returns raw data to your host AI for perfect formatting
 
-**Output:** `md/resume/resume_history.md`
+**Output:** `md/resume/resume_history.md` (generated by your host LLM)
+
+---
+
+### `tailor_resume_for_job` ⭐ NEW
+
+The culmination tool. It reads **all** generated Markdown files from `md/` (output of the 4 tools above) and combines them with a Job Description. It then instructs your host LLM to generate a perfectly ATS-optimized resume.
+
+#### Input Methods
+
+You can provide the Job Description in **any** of these ways:
+
+| Method | Parameter | Example |
+|---|---|---|
+| **Paste text** | `job_description_text` | `"We are looking for a Backend Engineer..."` |
+| **Single file** | `job_description_file` | `"/path/to/role.txt"` or `"/path/to/jd.pdf"` |
+| **Folder of files** | `job_description_folder` | `"/path/to/jd_folder/"` (reads all TXT/PDF/DOCX inside) |
+| **`.env` default** | `JD_INPUT_PATH` | Auto-reads when no arguments are provided |
+
+Supported file types: `.txt`, `.md`, `.pdf`, `.docx`
+
+#### Usage
+
+```python
+# Method 1: Paste the JD directly
+tailor_resume_for_job(
+    job_description_text="We are looking for a Machine Learning Engineer at Google..."
+)
+
+# Method 2: Point to a JD file
+tailor_resume_for_job(
+    job_description_file="/path/to/google_ml_engineer.txt"
+)
+
+# Method 3: Point to a folder of JD documents
+tailor_resume_for_job(
+    job_description_folder="/path/to/job_descriptions/"
+)
+
+# Method 4: Zero-config — reads JD_INPUT_PATH from .env
+tailor_resume_for_job()
+
+# Mix text + file for extra context
+tailor_resume_for_job(
+    job_description_text="Additional notes: focus on NLP experience",
+    job_description_file="/path/to/jd.pdf"
+)
+```
+
+#### What Stays Static (copied exactly)
+- ✅ Name, email, phone, LinkedIn, GitHub, portfolio
+- ✅ Education — degree, university, CGPA
+- ✅ Certifications & Awards
+
+#### What Gets Tailored (by your LLM)
+- 🎯 Professional Summary — rewritten for the specific role
+- 🎯 Skills — selected and grouped to match JD keywords
+- 🎯 Experience — bullet points rewritten to align with JD
+- 🎯 Projects — top relevant projects selected with matching tech stacks
+- 🎯 Area of Interest — aligned with the JD domain
+
+**Output:** `md/tailored/<CompanyName>_<JobTitle>.md`
 
 ---
 
@@ -197,7 +269,7 @@ resume_history_analyze(folder_path="/path/to/resumes")
 
 ```
 md/
-├── linkedin/
+├── linkedin/                    ← linkedin_ingest_archive
 │   ├── identity.md
 │   ├── summary.md
 │   ├── experience.md
@@ -206,18 +278,23 @@ md/
 │   ├── certifications.md
 │   └── projects.md
 │
-├── github/
+├── github/                      ← github_build_profile
 │   ├── projects/
-│   │   └── <repo-name>.md   (one per selected repo)
+│   │   └── <repo-name>.md
 │   └── projects_summary.md
 │
-├── coding/
+├── coding/                      ← coding_extract_profiles
 │   ├── leetcode.md
 │   ├── codeforces.md
 │   └── summary.md
 │
-└── resume/
-    └── resume_history.md
+├── resume/                      ← resume_history_analyze
+│   └── resume_history.md
+│
+└── tailored/                    ← tailor_resume_for_job
+    ├── Google_MLEngineer.md
+    ├── Microsoft_BackendDev.md
+    └── ...
 ```
 
 > **Note:** The `md/` directory is git-ignored. It contains your personal career data and is regenerated on each run.
@@ -243,7 +320,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 }
 ```
 
-### Cursor
+### Cursor / VS Code
 
 Go to **Settings → MCP → Add Server**:
 
@@ -265,13 +342,15 @@ Go to **Settings → MCP → Add Server**:
 {
   "mcpServers": {
     "resumeforge": {
-      "command": "conda",
-      "args": ["run", "-n", "your-env-name", "python", "server.py"],
+      "command": "C:\\Users\\you\\miniconda3\\envs\\your-env\\python.exe",
+      "args": ["server.py"],
       "cwd": "/absolute/path/to/ResumeForge"
     }
   }
 }
 ```
+
+> **Tip:** Use the full Python path instead of `conda run` to avoid stdio corruption.
 
 ---
 
@@ -281,11 +360,11 @@ Each data source is a fully self-contained module. Adding a new source means cre
 
 ```
 ResumeForge/
-├── server.py              # Central MCP server — single entry point
+├── server.py              # Central MCP server — single entry point (5 tools)
 ├── env_loader.py          # Shared .env reader — used by all tools
 ├── .env.example           # Config template
 │
-├── linkedin_mcp/          # Tool: LinkedIn archive
+├── linkedin_mcp/          # Tool 1: LinkedIn archive
 │   ├── tool.py            #   linkedin_ingest_archive()
 │   ├── parser.py          #   CSV discovery + parsing
 │   ├── markdown_writer.py #   Markdown generation
@@ -295,41 +374,48 @@ ResumeForge/
 │   ├── exceptions.py      #   Custom error hierarchy
 │   └── utils.py           #   Helpers
 │
-├── github_mcp/            # Tool: GitHub projects
+├── github_mcp/            # Tool 2: GitHub projects
 │   ├── tool.py            #   github_build_profile()
-│   ├── api.py             #   GraphQL + REST client with rate-limit handling
+│   ├── api.py             #   GraphQL + REST client
 │   ├── analyzer.py        #   Tech stack inference + relevance scoring
-│   ├── markdown_writer.py #   Per-repo + summary Markdown
-│   ├── config.py          #   API URLs, tech keywords, thresholds
-│   ├── prompts.py         #   Markdown templates
-│   ├── schemas.py         #   Typed dataclasses
-│   └── exceptions.py      #   Custom errors
+│   ├── markdown_writer.py
+│   ├── config.py
+│   ├── prompts.py
+│   ├── schemas.py
+│   └── exceptions.py
 │
-├── coding_mcp/            # Tool: Coding platforms
+├── coding_mcp/            # Tool 3: Coding platforms
 │   ├── tool.py            #   coding_extract_profiles()
-│   ├── api.py             #   LeetCode GraphQL + Codeforces REST fetchers
-│   ├── markdown_writer.py #   Per-platform + summary Markdown
-│   ├── config.py          #   URL patterns, API endpoints, strength thresholds
-│   ├── prompts.py         #   Markdown templates
-│   ├── schemas.py         #   Typed dataclasses
-│   └── exceptions.py      #   Custom errors
+│   ├── api.py             #   LeetCode GraphQL + Codeforces REST
+│   ├── markdown_writer.py
+│   ├── config.py
+│   ├── prompts.py
+│   ├── schemas.py
+│   └── exceptions.py
 │
-├── resume_mcp/            # Tool: Resume history analysis
+├── resume_mcp/            # Tool 4: Resume history analysis
 │   ├── tool.py            #   resume_history_analyze()
 │   ├── extractor.py       #   pdfplumber → PyMuPDF fallback + DOCX
-│   ├── classifier.py      #   generic vs company-specific detection
-│   ├── aggregator.py      #   merge all RawResumes
-│   ├── deduplicator.py    #   fuzzy + exact dedup engine
-│   ├── timeline.py        #   career progression reconstruction
-│   ├── markdown_writer.py #   final Markdown output
-│   ├── prompts.py         #   Markdown templates
-│   ├── schemas.py         #   Typed dataclasses
-│   ├── config.py          #   section keywords, thresholds
-│   └── exceptions.py      #   custom errors
+│   ├── classifier.py      #   generic vs company-specific
+│   ├── aggregator.py
+│   ├── deduplicator.py
+│   ├── timeline.py
+│   ├── markdown_writer.py
+│   ├── prompts.py
+│   ├── schemas.py
+│   ├── config.py
+│   └── exceptions.py
+│
+├── tailor_mcp/            # Tool 5: ATS resume tailor
+│   ├── tool.py            #   tailor_resume_for_job()
+│   ├── reader.py          #   md/ aggregator + JD parser (TXT/PDF/DOCX)
+│   ├── prompts.py         #   LLM system instructions for ATS optimization
+│   ├── config.py          #   Constants and paths
+│   └── exceptions.py      #   Custom error hierarchy
 │
 └── .github/
-    ├── workflows/ci.yml          # CI: import checks on Python 3.10/3.11/3.12
-    ├── ISSUE_TEMPLATE/           # Bug + feature templates
+    ├── workflows/ci.yml
+    ├── ISSUE_TEMPLATE/
     └── PULL_REQUEST_TEMPLATE.md
 ```
 
@@ -339,7 +425,7 @@ ResumeForge/
 
 ### Add a new MCP tool module
 
-1. Create `new_source_mcp/` with `tool.py`, `schemas.py`, `config.py`, `exceptions.py`
+1. Create `new_source_mcp/` with `tool.py`, `config.py`, `exceptions.py`
 2. Implement `new_source_extract(input: str | None = None) -> dict`
 3. Register in `server.py`:
    ```python

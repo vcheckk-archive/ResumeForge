@@ -27,6 +27,7 @@ md/
 *.rar
 *LinkedInDataExport*/
 *linkedin*export*/
+job_description
 *.pdf
 *.docx
 
