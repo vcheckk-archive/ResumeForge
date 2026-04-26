@@ -50,25 +50,18 @@ logger = logging.getLogger(__name__)
 # MCP Gateway Tool
 # ──────────────────────────────────────────────────────────────────────
 
-
 def resume_history_analyze(
     folder_path: str | None = None,
     output_dir: str | None = None,
-) -> str:
+) -> dict:
     """
-    Analyze a folder of resume files, extract the raw data, and prompt
-    the calling LLM to deduplicate and structure it into a Markdown file.
-
-    Args:
-        folder_path: Path to folder containing PDF/DOCX resumes.
-                     If not provided, reads RESUME_HISTORY_PATH from .env.
-        output_dir:  Custom output directory. Defaults to md/resume/
-                     in the project root.
-
     Returns:
-        A string containing the raw unstructured text from all resumes,
-        prefaced with a strict instruction to the client LLM to format
-        and save the data as a perfectly structured Markdown file.
+        dict with keys:
+          - success: bool
+          - prompt: str|None
+          - errors: list[str]
+          - files_processed: list[str]
+          - files_failed: list[str]
     """
     result = AnalysisResult()
 
@@ -128,16 +121,13 @@ def resume_history_analyze(
         # ── Step 6: Timeline ──────────────────────────────────────────
         history = build_timeline(resumes, history)
 
-        # ── Step 7: Hand off to the client LLM ────────────────────────────
-        # Instead of writing chaotic heuristic markdown, we ask the calling LLM
-        # to format it beautifully.
+        # ── Step 7: Hand off to the client LLM ───────────────────────
         out_path = (
             Path(output_dir)
             if output_dir
             else Path(__file__).resolve().parent.parent / DEFAULT_OUTPUT_DIR
         )
-        
-        # Prepare the raw text for the LLM
+
         raw_payload = []
         raw_payload.append(f"Identity: {history.identity}")
         for exp in history.experiences:
@@ -150,7 +140,7 @@ def resume_history_analyze(
         raw_payload.append(f"Certs: {history.certifications}")
         for sec in history.raw_sections_unclassified:
             raw_payload.append(f"Unclassified Section [{sec.heading}]: {sec.content}")
-            
+
         full_raw_text = "\n\n".join(raw_payload)
 
         prompt = f"""
@@ -169,17 +159,40 @@ Because PDF extraction is messy, the raw text below is chaotic.
 RAW DATA:
 ================
 {full_raw_text}
-"""
-        return prompt
+""".strip()
+
+        return {
+            "success": True,
+            "prompt": prompt,
+            "errors": list(result.errors),
+            "files_processed": list(result.files_processed),
+            "files_failed": list(result.files_failed),
+        }
 
     except (FolderNotFoundError, NoResumesFoundError) as e:
-        return f"Input error: {e}"
+        return {
+            "success": False,
+            "prompt": None,
+            "errors": [f"Input error: {e}"],
+            "files_processed": list(result.files_processed),
+            "files_failed": list(result.files_failed),
+        }
     except ResumeMCPError as e:
-        return f"Pipeline error: {e}"
+        return {
+            "success": False,
+            "prompt": None,
+            "errors": [f"Pipeline error: {e}"],
+            "files_processed": list(result.files_processed),
+            "files_failed": list(result.files_failed),
+        }
     except Exception as e:
-        return f"Unexpected error in resume_history_analyze: {e}"
-
-
+        return {
+            "success": False,
+            "prompt": None,
+            "errors": [f"Unexpected error in resume_history_analyze: {e}"],
+            "files_processed": list(result.files_processed),
+            "files_failed": list(result.files_failed),
+        }
 # ──────────────────────────────────────────────────────────────────────
 # File Discovery
 # ──────────────────────────────────────────────────────────────────────
