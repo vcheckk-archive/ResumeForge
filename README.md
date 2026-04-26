@@ -34,6 +34,29 @@ Connect ResumeForge to Claude Desktop, Cursor, or any MCP-compatible client and 
 
 ---
 
+## 📈 Why ResumeForge? (The ATS Advantage)
+
+Writing resumes manually takes hours, and modern **Applicant Tracking Systems (ATS)** heavily penalize human formatting errors. We tested a human-crafted resume against a **ResumeForge AI-Tailored** resume using standard ATS scoring metrics. 
+
+Here is why the `tailor_mcp` tool is a game-changer for your job hunt:
+
+<div align="center">
+  <img src="image.png" alt="ATS Performance Comparison: Human vs ResumeForge" width="800">
+  <p><em>Real ATS parsing comparison demonstrating the ResumeForge advantage.</em></p>
+</div>
+
+### 🔍 The Core Issues ResumeForge Solves
+
+| 🛑 The "Human Resume" Problem | ✅ The ResumeForge Solution |
+| :--- | :--- |
+| **Garbled Parsing:** Two-column PDFs are read left-to-right linearly by ATS, mixing skills and experience text together into complete gibberish. | **100% Parsing Accuracy:** Generates clean, single-column plain-text Markdown that ATS systems parse flawlessly. |
+| **Missing Context:** Listing "Flask" in a skills section isn't enough; ATS parsers weight keywords heavily when found inside bullet points. | **Contextual Keyword Injection:** The AI automatically rewrites your bullet points to organically include JD keywords (e.g., *FastAPI, HTTP concepts*). |
+| **Time Consuming:** Manually rewriting projects and bullet points for every single job application takes 1-2 hours per company. | **Seconds, not Hours:** Instantly queries your entire career database (`md/`) and generates a perfect match in seconds. |
+
+By using the `tailor_resume_for_job` tool, you ensure dense keyword coverage and a structure that recruitment software actually understands, massively increasing your interview callback rate.
+
+---
+
 ## How It Works
 
 ```
