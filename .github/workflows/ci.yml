@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    name: Lint & Import Check
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check all modules import cleanly
+        run: |
+          python -c "from linkedin_mcp.tool import linkedin_ingest_archive; print('linkedin_mcp OK')"
+          python -c "from github_mcp.tool import github_build_profile; print('github_mcp OK')"
+          python -c "from coding_mcp.tool import coding_extract_profiles; print('coding_mcp OK')"
+          python -c "from resume_mcp.tool import resume_history_analyze; print('resume_mcp OK')"
+          python -c "from env_loader import load_env; print('env_loader OK')"
+
+      - name: Verify all 4 tools register on server
+        run: |
+          python -c "
+          from env_loader import load_env
+          load_env()
+          from server import mcp
+          tools = list(mcp._tool_manager._tools.keys())
+          expected = {'linkedin_ingest_archive','github_build_profile','coding_extract_profiles','resume_history_analyze'}
+          missing = expected - set(tools)
+          assert not missing, f'Missing tools: {missing}'
+          print(f'All {len(tools)} tools registered: {tools}')
+          "
+
+      - name: Test graceful failure (missing folder)
+        run: |
+          python -c "
+          from resume_mcp.tool import resume_history_analyze
+          r = resume_history_analyze(folder_path='/nonexistent/path')
+          assert not r['success'], 'Should fail gracefully'
+          assert r['errors'], 'Should have error message'
+          print('Graceful failure: OK')
+          "
+
+      - name: Test coding tool input parser
+        run: |
+          python -c "
+          from coding_mcp.tool import _parse_profiles
+          r = _parse_profiles('leetcode: testuser, codeforces: testuser2')
+          assert len(r) == 2, f'Expected 2, got {len(r)}'
+          print('Coding parser: OK')
+          "

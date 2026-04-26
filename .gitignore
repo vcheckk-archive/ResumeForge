@@ -6,18 +6,33 @@ __pycache__/
 dist/
 build/
 *.egg
+.eggs/
 
-# ── Environment & Secrets ─────────────────────────────────────────────
+# ── Virtual Environments ──────────────────────────────────────────────
+.venv/
+venv/
+env/
+.env.local
+.conda/
+
+# ── Environment & Secrets (NEVER commit these) ────────────────────────
 .env
-*.env.local
 
-# ── Generated Output (re-generated on each run) ──────────────────────
+# ── Generated Output (re-created on each run) ─────────────────────────
 md/
 
-# ── User Data (personal archives — never commit) ─────────────────────
+# ── User Data (personal archives — never commit) ──────────────────────
 *.zip
+*.tar.gz
+*.rar
 *LinkedInDataExport*/
 *linkedin*export*/
+*.pdf
+*.docx
+
+# ── Test / Scratch Scripts ────────────────────────────────────────────
+test_*.py
+scratch/
 
 # ── IDE / Editor ──────────────────────────────────────────────────────
 .vscode/
@@ -25,9 +40,9 @@ md/
 *.swp
 *.swo
 *~
-.DS_Store
-Thumbs.db
 
 # ── OS ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
 desktop.ini
 *.lnk
